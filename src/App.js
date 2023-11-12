@@ -18,6 +18,7 @@ function App() {
   const [incorrectAnswers, setIncorrectAnswers] = useState(0);
   const [answerStreak, setAnswerStreak] = useState(0);
   const [userAnswer, setUserAnswer] = useState(null);
+  const [timer,setTimer]=useState(15);
 
       const fetchQuestion = () => {
       fetch('https://the-trivia-api.com/v2/questions/')
@@ -33,6 +34,28 @@ function App() {
   useEffect(() => {
     fetchQuestion();
   }, []);
+   useEffect(() => {
+  const interval = setInterval(() => {
+  if (userAnswer === null)
+  {
+    setTimer(prevTimer => prevTimer - 1);
+  }
+  }, 1000);
+
+  if (timer === 0 && userAnswer === null) {
+    clearInterval(interval);
+    setUserAnswer('show');
+
+    setTimeout(() => {
+      setIncorrectAnswers(incorrectAnswers+1);
+      setUserAnswer(null);
+      fetchQuestion();
+      setTimer(15);
+    }, 3000);
+  }
+
+  return () => clearInterval(interval);
+}, [timer, userAnswer]);
 
   const handleAnswer = (Answer) => {
     if (userAnswer === null) {
@@ -48,6 +71,7 @@ function App() {
         }
         fetchQuestion();
         setUserAnswer(null);
+        setTimer(15);
       }, 3000);
     }
   };
@@ -68,6 +92,9 @@ function App() {
         </div>
         <div className="title">
           TriviaTempo
+        </div>
+        <div>
+        {timer}
         </div>
         <div className="question-container">
           {question && (
