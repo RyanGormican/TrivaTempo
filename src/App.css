@@ -21,6 +21,11 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+.answers{
+    padding:5vh;
+    border-radius: 25px;
+    font-size:4vh;
+}
 .title{
     font-size:7.5vh;
 }
