@@ -7,14 +7,21 @@ const [question, setQuestion] = useState(null);
 const [correctAnswers,setCorrectAnswers] = useState(0);
 const [incorrectAnswers,setIncorrectAnswers] = useState(0);
 const [answerStreak, setAnswerStreak] = useState(0);
-  useEffect(() => {
+const [userAnswer, setUserAnswer] = useState(null);
+
+const fetchQuestion = () => {
     fetch('https://the-trivia-api.com/v2/questions/')
       .then(response => response.json())
       .then(data => setQuestion(data[0]))
       .catch(error => console.error('Error fetching question:', error));
+}
+  useEffect(() => {
+        fetchQuestion();
       }, []);
       
        const handleAnswer = (Answer) => {
+        if (userAnswer === null) {
+      setUserAnswer(Answer);
        if (Answer === question.correctAnswer){
         setAnswerStreak(answerStreak+1);
         setCorrectAnswers(correctAnswers+1);
@@ -24,7 +31,14 @@ const [answerStreak, setAnswerStreak] = useState(0);
         setAnswerStreak(0);
         setIncorrectAnswers(incorrectAnswers+1);
        }
+       const buttonStyle = Answer === question.correctAnswer ? 'correct' : 'incorrect';
+
+             setTimeout(() => {
+       fetchQuestion();
+       setUserAnswer(null);
+       },3000);
        }
+       };
   return (
     <div className="App">
       <header className="App-header">
@@ -48,15 +62,17 @@ const [answerStreak, setAnswerStreak] = useState(0);
               <h2>{question.question.text}</h2>
               <ul>
                 {[...question.incorrectAnswers, question.correctAnswer].map(answer => (
-                  <button class="answers" key={answer} onClick={() => handleAnswer(answer)}>{answer}</button>
+                  <button  className={`answers ${userAnswer === answer ? (answer === question.correctAnswer ? 'correct' : 'incorrect') : ''}`} key={answer}  onClick={() => handleAnswer(answer)}>{answer}</button>
                 ))}
               </ul>
             </>
           )}
         </div>
-        <h2> Correct Answers : {correctAnswers} </h2>
-        <h2> Incorrect Answers : {incorrectAnswers} </h2>
-        <h2> Answer Streak : {answerStreak} </h2>
+        <span>
+        <p> Correct Answers : {correctAnswers} </p>
+        <p> Incorrect Answers : {incorrectAnswers} </p>
+        <p> Answer Streak : {answerStreak} </p>
+        </span>
       </header>
     </div>
   );
