@@ -19,7 +19,7 @@ function App() {
   const [answerStreak, setAnswerStreak] = useState(0);
   const [userAnswer, setUserAnswer] = useState(null);
   const [timer,setTimer]=useState(15);
-
+  const [bestAnswerStreak, setBestAnswerStreak] = useState(0);
       const fetchQuestion = () => {
       fetch('https://the-trivia-api.com/v2/questions/')
         .then(response => response.json())
@@ -65,10 +65,18 @@ function App() {
         if (Answer === question.correctAnswer) {
           setAnswerStreak(answerStreak + 1);
           setCorrectAnswers(correctAnswers + 1);
+               if (answerStreak+1 > bestAnswerStreak)
+          {
+          setBestAnswerStreak(answerStreak+1);
+          }
         } else {
           setAnswerStreak(0);
           setIncorrectAnswers(incorrectAnswers + 1);
         }
+         if (answerStreak > bestAnswerStreak)
+          {
+          setBestAnswerStreak(answerStreak);
+          }
         fetchQuestion();
         setUserAnswer(null);
         setTimer(15);
@@ -123,7 +131,8 @@ function App() {
         <span>
           <p> Correct Answers: {correctAnswers} </p>
           <p> Incorrect Answers: {incorrectAnswers} </p>
-          <p> Answer Streak: {answerStreak} </p>
+          <p> Current Answer Streak: {answerStreak} </p>
+          <p> Best Answer Streak: {bestAnswerStreak} </p>
         </span>
       </header>
     </div>
