@@ -4,13 +4,27 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 function App() {
 const [question, setQuestion] = useState(null);
-const [correctAnswer, setcorrectAnswer] = useState(null);
+const [correctAnswers,setCorrectAnswers] = useState(0);
+const [incorrectAnswers,setIncorrectAnswers] = useState(0);
+const [answerStreak, setAnswerStreak] = useState(0);
   useEffect(() => {
     fetch('https://the-trivia-api.com/v2/questions/')
       .then(response => response.json())
       .then(data => setQuestion(data[0]))
       .catch(error => console.error('Error fetching question:', error));
-      }, []); 
+      }, []);
+      
+       const handleAnswer = (Answer) => {
+       if (Answer === question.correctAnswer){
+        setAnswerStreak(answerStreak+1);
+        setCorrectAnswers(correctAnswers+1);
+       }
+       else
+       {
+        setAnswerStreak(0);
+        setIncorrectAnswers(incorrectAnswers+1);
+       }
+       }
   return (
     <div className="App">
       <header className="App-header">
@@ -34,12 +48,15 @@ const [correctAnswer, setcorrectAnswer] = useState(null);
               <h2>{question.question.text}</h2>
               <ul>
                 {[...question.incorrectAnswers, question.correctAnswer].map(answer => (
-                  <button class="answers" key={answer}>{answer}</button>
+                  <button class="answers" key={answer} onClick={() => handleAnswer(answer)}>{answer}</button>
                 ))}
               </ul>
             </>
           )}
         </div>
+        <h2> Correct Answers : {correctAnswers} </h2>
+        <h2> Incorrect Answers : {incorrectAnswers} </h2>
+        <h2> Answer Streak : {answerStreak} </h2>
       </header>
     </div>
   );
