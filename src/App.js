@@ -20,6 +20,7 @@ function App() {
   const [userAnswer, setUserAnswer] = useState(null);
   const [timer,setTimer]=useState(15);
   const [bestAnswerStreak, setBestAnswerStreak] = useState(0);
+  const [view,setView] = useState('basic');
       const fetchQuestion = () => {
       fetch('https://the-trivia-api.com/v2/questions/')
         .then(response => response.json())
@@ -32,7 +33,7 @@ function App() {
         .catch(error => console.error('Error fetching question:', error));
     };
   useEffect(() => {
-    fetchQuestion();
+  //  fetchQuestion();
   }, []);
    useEffect(() => {
   const interval = setInterval(() => {
@@ -49,7 +50,7 @@ function App() {
     setTimeout(() => {
       setIncorrectAnswers(incorrectAnswers+1);
       setUserAnswer(null);
-      fetchQuestion();
+    //  fetchQuestion();
       setTimer(15);
     }, 3000);
   }
@@ -77,7 +78,7 @@ function App() {
           {
           setBestAnswerStreak(answerStreak);
           }
-        fetchQuestion();
+      //  fetchQuestion();
         setUserAnswer(null);
         setTimer(15);
       }, 3000);
@@ -101,7 +102,7 @@ function App() {
         <div className="title">
           TriviaTempo
         </div>
-        <div>
+        <div className="timer">
         {timer}
         </div>
         <div className="question-container">
@@ -128,12 +129,19 @@ function App() {
             </>
           )}
         </div>
-        <span>
+        <div className="buttons">
+        <button> Answer Stats </button> 
+        <button> Type Stats </button> 
+        </div>
+        {view=='basic' && (
+        <span className="stats">
           <p> Correct Answers: {correctAnswers} </p>
           <p> Incorrect Answers: {incorrectAnswers} </p>
           <p> Current Answer Streak: {answerStreak} </p>
           <p> Best Answer Streak: {bestAnswerStreak} </p>
         </span>
+        )
+        }
       </header>
     </div>
   );

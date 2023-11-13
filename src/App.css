@@ -1,5 +1,4 @@
 .App {
-  text-align: center;
 }
 
 .App-logo {
@@ -28,13 +27,34 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+.stats{
+  display:flex; 
+  padding-top: 5vh;
+  font-size: calc(5px + 2vmin);
+  flex-direction:column;
+}
+.stats p {
+    margin: 0;
+    padding-left:40vw;
+}
+.question-container{
+    text-align: center;
+}
 .answers{
     padding:5vh;
     border-radius: 25px;
     font-size:4vh;
 }
+.buttons{
+    padding-top:6vh;
+    text-align:center;
+}
 .title{
     font-size:7.5vh;
+    text-align: center;
+}
+.timer{
+    text-align:center;
 }
 .links {
   display: flex;
