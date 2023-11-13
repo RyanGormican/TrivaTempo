@@ -20,7 +20,9 @@ function App() {
   const [userAnswer, setUserAnswer] = useState(null);
   const [timer,setTimer]=useState(15);
   const [bestAnswerStreak, setBestAnswerStreak] = useState(0);
+  const [questionTags, setQuestionTags] = useState([]);
   const [view,setView] = useState('basic');
+  const [statsView, setStatsView] = useState('total');
       const fetchQuestion = () => {
       fetch('https://the-trivia-api.com/v2/questions/')
         .then(response => response.json())
@@ -33,8 +35,13 @@ function App() {
         .catch(error => console.error('Error fetching question:', error));
     };
   useEffect(() => {
-  //  fetchQuestion();
+//  fetchQuestion();
   }, []);
+  useEffect(() => {
+  if (question) {
+    setQuestionTags(prevTags => [...prevTags, ...question.tags]);
+  }
+}, [question]);
    useEffect(() => {
   const interval = setInterval(() => {
   if (userAnswer === null)
@@ -50,7 +57,7 @@ function App() {
     setTimeout(() => {
       setIncorrectAnswers(incorrectAnswers+1);
       setUserAnswer(null);
-    //  fetchQuestion();
+ //    fetchQuestion();
       setTimer(15);
     }, 3000);
   }
@@ -78,7 +85,7 @@ function App() {
           {
           setBestAnswerStreak(answerStreak);
           }
-      //  fetchQuestion();
+  //      fetchQuestion();
         setUserAnswer(null);
         setTimer(15);
       }, 3000);
@@ -109,6 +116,7 @@ function App() {
           {question && (
             <>
               <h2>{question.question.text}</h2>
+              <h4> {question.tags.join(', ')} </h4>
               <ul>
                 {question.answers?.map(answer => (
                   <button
@@ -130,8 +138,9 @@ function App() {
           )}
         </div>
         <div className="buttons">
-        <Button> Answer Stats </Button> 
-        <Button> Type Stats </Button> 
+       <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white',}} onClick={() => setView('basic')}> Answer Stats </Button>
+<Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setView('stats')}> Type Stats </Button>
+
         </div>
         {view=='basic' && (
         <span className="stats">
@@ -142,6 +151,33 @@ function App() {
         </span>
         )
         }
+  {view === 'stats' && (
+  <div>
+  <div className="buttons2">
+       <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white',}} onClick={() => setStatsView('total')}> Total Stats </Button>
+<Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setStatsView('percentage')}> Percentage Stats </Button>
+
+        </div>
+   {statsView === 'total' && (
+   <div>
+    {questionTags.length > 0 && (
+      <div className="stats">
+        {Array.from(new Set(questionTags))
+          .sort((a, b) => questionTags.filter(t => t === b).length - questionTags.filter(t => t === a).length)
+          .map(tag => (
+            <p key={tag}>{`${tag}: ${questionTags.filter(t => t === tag).length}`}</p>
+          ))}
+      </div>
+    )}
+    </div>
+    )}
+       {statsView === 'percentage' && (
+       <div>
+
+       </div>
+       )}
+  </div>
+)}
       </header>
     </div>
   );
