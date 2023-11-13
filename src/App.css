@@ -29,7 +29,6 @@
 }
 .stats{
   display:flex; 
-  padding-top: 5vh;
   font-size: calc(5px + 2vmin);
   flex-direction:column;
 }

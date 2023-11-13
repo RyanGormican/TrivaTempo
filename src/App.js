@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-
+import Button from '@mui/material/Button';
 function shuffleArray(array) {
   let shuffledArray = array.slice();
   for (let i = shuffledArray.length - 1; i > 0; i--) {
@@ -130,8 +130,8 @@ function App() {
           )}
         </div>
         <div className="buttons">
-        <button> Answer Stats </button> 
-        <button> Type Stats </button> 
+        <Button> Answer Stats </Button> 
+        <Button> Type Stats </Button> 
         </div>
         {view=='basic' && (
         <span className="stats">
