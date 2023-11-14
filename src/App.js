@@ -3,7 +3,9 @@ import './App.css';
 import React, { useState, useEffect,useRef  } from 'react';
 import { Icon } from '@iconify/react';
 import Button from '@mui/material/Button';
-
+import GoogleButton from 'react-google-button';
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut  } from 'firebase/auth';
+import { auth, database, storage } from './firebaseConfig';
 function shuffleArray(array) {
   let shuffledArray = array.slice();
   for (let i = shuffledArray.length - 1; i > 0; i--) {
@@ -26,6 +28,16 @@ function App() {
   const [view, setView] = useState('basic');
   const [statsView, setStatsView] = useState('total');
   const fetchingQuestion = useRef(false);
+  const user = auth.currentUser;
+  let googleProvider = new GoogleAuthProvider();
+
+  const signUp = () => {
+    signInWithPopup(auth, googleProvider);
+  };
+   const handleLogout = () => {
+    signOut(auth);
+  };
+
    const fetchQuestion = () => {
     if (!fetchingQuestion.current) {
       fetchingQuestion.current = true;
@@ -81,7 +93,7 @@ function App() {
           });
         });
         setUserAnswer(null);
-        fetchQuestion();
+      //  fetchQuestion();
         setTimer(15);
       }, 3000);
     }
@@ -183,6 +195,8 @@ const handleAnswer = (Answer) => {
         <div className="buttons">
           <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setView('basic')}> Answer Stats </Button>
           <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setView('stats')}> Type Stats </Button>
+          <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setView('account')}> Account </Button>
+          <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setView('leaderboard')}> Leaderboard </Button>
         </div>
         {view === 'basic' && (
           <span className="stats">
@@ -226,6 +240,36 @@ const handleAnswer = (Answer) => {
 
           </div>
         )}
+
+            {view === 'account' && (
+            <div>
+            <div className="center">
+            {!user && (
+            <div>
+            Sign in to save your stats!
+            <GoogleButton onClick={signUp} />
+            </div>
+            )}
+            {user  && (
+            <div className="center">
+
+             <div className="icon-logout" onClick={handleLogout}>
+                <Icon icon="material-symbols:logout" height="60" />
+            </div>
+            </div>
+            )}
+            </div>
+            </div>
+            )}
+
+
+             {view === 'leaderboard' && (
+            <div>
+            <div className="center">
+            Coming Soon!
+            </div>
+            </div>
+            )}
       </header>
     </div>
   );
