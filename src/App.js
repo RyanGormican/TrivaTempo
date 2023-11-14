@@ -6,6 +6,17 @@ import Button from '@mui/material/Button';
 import GoogleButton from 'react-google-button';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut  } from 'firebase/auth';
 import { auth, database, storage } from './firebaseConfig';
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  where,
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+} from 'firebase/firestore';
 function shuffleArray(array) {
   let shuffledArray = array.slice();
   for (let i = shuffledArray.length - 1; i > 0; i--) {
@@ -57,9 +68,29 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    fetchQuestion();
-  }, []);
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      if (user) {
+        const userDocRef = doc(database, 'user', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setBestAnswerStreak(userData.bestAnswerStreak || 0);
+          setCorrectAnswers(userData.correctAnswers || 0);
+          setIncorrectAnswers(userData.incorrectAnswers || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  fetchQuestion(); 
+  fetchData(); 
+}, [user]);
+
 
   useEffect(() => {
 
@@ -78,7 +109,7 @@ function App() {
     if (timer === 0 && userAnswer === null) {
       clearInterval(interval);
       setUserAnswer('show');
-
+       updateUserData();
       setTimeout(() => {
         setIncorrectAnswers(incorrectAnswers + 1);
         question.tags.forEach(tag => {
@@ -93,7 +124,7 @@ function App() {
           });
         });
         setUserAnswer(null);
-      //  fetchQuestion();
+        fetchQuestion();
         setTimer(15);
       }, 3000);
     }
@@ -101,10 +132,39 @@ function App() {
     return () => clearInterval(interval);
   }, [timer, userAnswer]);
 
+ const updateUserData = async () => {
+    try {
+      if (user) {
+        const userDocRef = doc(database, 'user', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        console.log("test");
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          await updateDoc(userDocRef, {
+            totalAnswered: userData.totalAnswers + 1,
+            correctAnswers: userData.correctAnswers + (userAnswer === question.correctAnswer ? 1 : 0),
+            incorrectAnswers: userData.incorrectAnswers + (userAnswer !== question.correctAnswer ? 1 : 0),
+            bestAnswerStreak: Math.max(userData.bestAnswerStreak, answerStreak),
+          });
+        } else {
+          await setDoc(userDocRef, {
+            totalAnswered: 1,
+            correctAnswers: userAnswer === question.correctAnswer ? 1 : 0,
+            incorrectAnswers: userAnswer !== question.correctAnswer ? 1 : 0,
+            bestAnswerStreak: answerStreak,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating user data:', error);
+    }
+  };
+
+
 const handleAnswer = (Answer) => {
   if (userAnswer === null) {
     setUserAnswer(Answer);
-
+     updateUserData();
     setTimeout(() => {
       question.tags.forEach(tag => {
         setTagStats(prevStats => {
@@ -136,7 +196,6 @@ const handleAnswer = (Answer) => {
         setAnswerStreak(0);
         setIncorrectAnswers(incorrectAnswers + 1);
       }
-
       fetchQuestion();
       setUserAnswer(null);
       setTimer(15);
