@@ -40,6 +40,7 @@ function App() {
   const [statsView, setStatsView] = useState('total');
   const fetchingQuestion = useRef(false);
   const user = auth.currentUser;
+  const [username, setUsername] = useState('');
   let googleProvider = new GoogleAuthProvider();
 
   const signUp = () => {
@@ -80,6 +81,7 @@ useEffect(() => {
           setBestAnswerStreak(userData.bestAnswerStreak || 0);
           setCorrectAnswers(userData.correctAnswers || 0);
           setIncorrectAnswers(userData.incorrectAnswers || 0);
+          setUsername(userData.username || '');
         }
       }
     } catch (error) {
@@ -159,7 +161,16 @@ useEffect(() => {
       console.error('Error updating user data:', error);
     }
   };
-
+  const updateUsername = async () => {
+    try {
+      if (user) {
+        const userDocRef = doc(database, 'user', user.uid);
+        await updateDoc(userDocRef, { username });
+      }
+    } catch (error) {
+      console.error('Error updating username:', error);
+    }
+  };
 
 const handleAnswer = (Answer) => {
   if (userAnswer === null) {
@@ -311,7 +322,18 @@ const handleAnswer = (Answer) => {
             )}
             {user  && (
             <div className="center">
-
+            <input
+                      type="text"
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                    />
+                    <Button
+                      style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white' }}
+                      onClick={updateUsername}
+                    >
+                      Update Username
+                    </Button>
              <div className="icon-logout" onClick={handleLogout}>
                 <Icon icon="material-symbols:logout" height="60" />
             </div>
