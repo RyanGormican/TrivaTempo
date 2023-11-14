@@ -82,6 +82,8 @@ useEffect(() => {
           setCorrectAnswers(userData.correctAnswers || 0);
           setIncorrectAnswers(userData.incorrectAnswers || 0);
           setUsername(userData.username || '');
+          setTagStats(userData.tagStats || {});
+          console.log(tagStats);
         }
       }
     } catch (error) {
@@ -95,7 +97,6 @@ useEffect(() => {
 
 
   useEffect(() => {
-
     if (question) {
       setQuestionTags(prevTags => [...prevTags, ...question.tags]);
     }
@@ -134,26 +135,41 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [timer, userAnswer]);
 
- const updateUserData = async () => {
+  const updateUserData = async ( Answer ) => {
     try {
       if (user) {
         const userDocRef = doc(database, 'user', user.uid);
         const userDoc = await getDoc(userDocRef);
-        console.log("test");
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          const updatedTagStats = { ...userData.tagStats };
+
+          question.tags.forEach(tag => {
+            updatedTagStats[tag] = updatedTagStats[tag] || { total: 0, correct: 0 };
+            updatedTagStats[tag].total += 1;
+            if (Answer === question.correctAnswer) {
+              updatedTagStats[tag].correct += 1;
+            }
+          });
           await updateDoc(userDocRef, {
-            totalAnswered: userData.totalAnswers + 1,
-            correctAnswers: userData.correctAnswers + (userAnswer === question.correctAnswer ? 1 : 0),
-            incorrectAnswers: userData.incorrectAnswers + (userAnswer !== question.correctAnswer ? 1 : 0),
+            totalAnswered: userData.totalAnswered + 1,
+            correctAnswers: userData.correctAnswers + (Answer === question.correctAnswer ? 1 : 0),
+            incorrectAnswers: userData.incorrectAnswers + (Answer !== question.correctAnswer ? 1 : 0),
             bestAnswerStreak: Math.max(userData.bestAnswerStreak, answerStreak),
+            tagStats: updatedTagStats,
           });
         } else {
+          const newTagStats = {};
+          question.tags.forEach(tag => {
+            newTagStats[tag] = { total: 1, correct: userAnswer === question.correctAnswer ? 1 : 0 };
+          });
+
           await setDoc(userDocRef, {
             totalAnswered: 1,
             correctAnswers: userAnswer === question.correctAnswer ? 1 : 0,
             incorrectAnswers: userAnswer !== question.correctAnswer ? 1 : 0,
             bestAnswerStreak: answerStreak,
+            tagStats: newTagStats,
           });
         }
       }
@@ -161,6 +177,7 @@ useEffect(() => {
       console.error('Error updating user data:', error);
     }
   };
+
   const updateUsername = async () => {
     try {
       if (user) {
@@ -175,42 +192,40 @@ useEffect(() => {
 const handleAnswer = (Answer) => {
   if (userAnswer === null) {
     setUserAnswer(Answer);
-     updateUserData();
-    setTimeout(() => {
-      question.tags.forEach(tag => {
-        setTagStats(prevStats => {
-          const newStats = { ...prevStats };
-          if (newStats[tag]) {
-            console.log(tag);
-            newStats[tag] = prevState => ({
-              total: prevState.total + 1,
-              correct: Answer === question.correctAnswer ? prevState.correct + 1 : prevState.correct,
-            });
-          } else {
-            newStats[tag] = {
-              total: 1,
-              correct: Answer === question.correctAnswer ? 1 : 0,
-            };
-            console.log(tag);
-          }
-          return newStats;
+      updateUserData(Answer);
+   setTimeout(() => {
+  question.tags.forEach(tag => {
+    setTagStats(prevStats => {
+      const newStats = { ...prevStats };
+      if (newStats[tag]) {
+        newStats[tag] = prevState => ({
+          total: prevState.total + 1,
+          correct: Answer === question.correctAnswer ? prevState.correct + 1 : prevState.correct,
         });
-      });
-
-      if (Answer === question.correctAnswer) {
-        setAnswerStreak(answerStreak + 1);
-        setCorrectAnswers(correctAnswers + 1);
-        if (answerStreak + 1 > bestAnswerStreak) {
-          setBestAnswerStreak(answerStreak + 1);
-        }
       } else {
-        setAnswerStreak(0);
-        setIncorrectAnswers(incorrectAnswers + 1);
+        newStats[tag] = {
+          total: 1,
+          correct: Answer === question.correctAnswer ? 1 : 0,
+        };
       }
-      fetchQuestion();
-      setUserAnswer(null);
-      setTimer(15);
-    }, 3000);
+      return newStats;
+    });
+  });
+
+  if (Answer === question.correctAnswer) {
+    setAnswerStreak(answerStreak + 1);
+    setCorrectAnswers(correctAnswers + 1);
+    if (answerStreak + 1 > bestAnswerStreak) {
+      setBestAnswerStreak(answerStreak + 1);
+    }
+  } else {
+    setAnswerStreak(0);
+    setIncorrectAnswers(incorrectAnswers + 1);
+  }
+  fetchQuestion();
+  setUserAnswer(null);
+  setTimer(15);
+}, 3000);
   }
 };
 
@@ -282,19 +297,15 @@ const handleAnswer = (Answer) => {
               <Button style={{ color: 'white', fontFamily: 'Lato', border: '1px solid white', }} onClick={() => setStatsView('total')}> Total Stats </Button>
              
             </div>
-            {statsView === 'total' && (
-              <div>
-                {questionTags.length > 0 && (
-                  <div className="stats">
-                    {Array.from(new Set(questionTags))
-                      .sort((a, b) => questionTags.filter(t => t === b).length - questionTags.filter(t => t === a).length)
-                      .map(tag => (
-                        <p key={tag}>{`${tag}: ${questionTags.filter(t => t === tag).length}`}</p>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
+          {statsView === 'total' && (
+  <div className="stats">
+    {Object.entries(tagStats)
+      .sort(([, a], [, b]) => b.total - a.total) 
+      .map(([tag, stats]) => (
+        <p key={tag}>{`${tag}: ${stats.total}`}</p>
+      ))}
+  </div>
+)}
  {statsView === 'percentage' && (
         <div className="stats">
          
