@@ -40,6 +40,7 @@ function App() {
   const [statsView, setStatsView] = useState('total');
   const fetchingQuestion = useRef(false);
   const user = auth.currentUser;
+  const [leaderboardData, setLeaderboardData] = useState({});
   const [username, setUsername] = useState('');
   let googleProvider = new GoogleAuthProvider();
 
@@ -68,6 +69,23 @@ function App() {
         });
     }
   };
+  useEffect(() => {
+  const fetchLeaderboardData = async () => {
+    try {
+      const leaderboardDocRef = doc(database, 'leaderboard', 'leaderboard');
+      const leaderboardDoc = await getDoc(leaderboardDocRef);
+
+      if (leaderboardDoc.exists()) {
+        const fetchedLeaderboardData = leaderboardDoc.data();
+        setLeaderboardData(fetchedLeaderboardData);
+      } else {
+      }
+    } catch (error) {
+    }
+  };
+
+  fetchLeaderboardData();
+}, []);
 
 
 useEffect(() => {
@@ -83,7 +101,6 @@ useEffect(() => {
           setIncorrectAnswers(userData.incorrectAnswers || 0);
           setUsername(userData.username || '');
           setTagStats(userData.tagStats || {});
-          console.log(tagStats);
         }
       }
     } catch (error) {
@@ -127,7 +144,7 @@ useEffect(() => {
           });
         });
         setUserAnswer(null);
-        fetchQuestion();
+      fetchQuestion();
         setTimer(15);
       }, 3000);
     }
@@ -135,48 +152,92 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [timer, userAnswer]);
 
-  const updateUserData = async ( Answer ) => {
-    try {
-      if (user) {
-        const userDocRef = doc(database, 'user', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const updatedTagStats = { ...userData.tagStats };
+const updateUserData = async (Answer) => {
+  try {
+    if (user) {
+      const userDocRef = doc(database, 'user', user.uid);
+      const userDoc = await getDoc(userDocRef);
 
-          question.tags.forEach(tag => {
-            updatedTagStats[tag] = updatedTagStats[tag] || { total: 0, correct: 0 };
-            updatedTagStats[tag].total += 1;
-            if (Answer === question.correctAnswer) {
-              updatedTagStats[tag].correct += 1;
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const updatedTagStats = { ...userData.tagStats };
+
+        question.tags.forEach(tag => {
+          updatedTagStats[tag] = updatedTagStats[tag] || { total: 0, correct: 0 };
+          updatedTagStats[tag].total += 1;
+          if (Answer === question.correctAnswer) {
+            updatedTagStats[tag].correct += 1;
+          }
+        });
+
+        await updateDoc(userDocRef, {
+          totalAnswered: userData.totalAnswered + 1,
+          correctAnswers: userData.correctAnswers + (Answer === question.correctAnswer ? 1 : 0),
+          incorrectAnswers: userData.incorrectAnswers + (Answer !== question.correctAnswer ? 1 : 0),
+          bestAnswerStreak: Math.max(userData.bestAnswerStreak, answerStreak),
+          tagStats: updatedTagStats,
+        });
+
+        const leaderboardDocRef = doc(database, 'leaderboard', 'leaderboard');
+        const leaderboardDoc = await getDoc(leaderboardDocRef);
+
+        if (leaderboardDoc.exists()) {
+          const leaderboardData = leaderboardDoc.data();
+          question.tags.forEach(async tag => {
+            const usernameToUpdate = userData.username || 'Anonymous';
+            const tagLeaderboard = leaderboardData[tag] || { userId: user.uid, username: usernameToUpdate, correct: 0, total: 0 };
+            const correctRate = (tagLeaderboard.correct / tagLeaderboard.total) * 100;
+            const userCorrectRate = (updatedTagStats[tag].correct / updatedTagStats[tag].total) * 100;
+            if (userCorrectRate > correctRate) {
+              leaderboardData[tag] = {
+                userId: user.uid,
+                username: usernameToUpdate,
+                correct: updatedTagStats[tag].correct,
+                total: updatedTagStats[tag].total,
+                correctRate: userCorrectRate,
+              };
             }
           });
-          await updateDoc(userDocRef, {
-            totalAnswered: userData.totalAnswered + 1,
-            correctAnswers: userData.correctAnswers + (Answer === question.correctAnswer ? 1 : 0),
-            incorrectAnswers: userData.incorrectAnswers + (Answer !== question.correctAnswer ? 1 : 0),
-            bestAnswerStreak: Math.max(userData.bestAnswerStreak, answerStreak),
-            tagStats: updatedTagStats,
-          });
-        } else {
-          const newTagStats = {};
-          question.tags.forEach(tag => {
-            newTagStats[tag] = { total: 1, correct: Answer === question.correctAnswer ? 1 : 0 };
-          });
 
-          await setDoc(userDocRef, {
-            totalAnswered: 1,
-            correctAnswers: Answer === question.correctAnswer ? 1 : 0,
-            incorrectAnswers: Answer !== question.correctAnswer ? 1 : 0,
-            bestAnswerStreak: answerStreak,
-            tagStats: newTagStats,
+    
+          question.tags.forEach(tag => {
+            if (!leaderboardData[tag]) {
+              leaderboardData[tag] = {
+                userId: user.uid,
+                username: userData.username || 'Anonymous',
+                correct: updatedTagStats[tag].correct,
+                total: updatedTagStats[tag].total,
+                correctRate: updatedTagStats[tag].correct/updatedTagStats[tag].total,
+              };
+            }
           });
+          await updateDoc(leaderboardDocRef, leaderboardData);
+        } else {
+      
         }
+      } else {
+        const newTagStats = {};
+        question.tags.forEach(tag => {
+          newTagStats[tag] = { total: 1, correct: Answer === question.correctAnswer ? 1 : 0 };
+        });
+
+        await setDoc(userDocRef, {
+          totalAnswered: 1,
+          correctAnswers: Answer === question.correctAnswer ? 1 : 0,
+          incorrectAnswers: Answer !== question.correctAnswer ? 1 : 0,
+          bestAnswerStreak: answerStreak,
+          tagStats: newTagStats,
+        });
       }
-    } catch (error) {
-      console.error('Error updating user data:', error);
     }
-  };
+  } catch (error) {
+    console.error('Error updating user data:', error);
+  }
+};
+
+
+
+
 
   const updateUsername = async () => {
     try {
@@ -355,13 +416,23 @@ const handleAnswer = (Answer) => {
             )}
 
 
-             {view === 'leaderboard' && (
-            <div>
-            <div className="center">
-            Coming Soon!
-            </div>
-            </div>
-            )}
+            {view === 'leaderboard' && (
+  <div>
+    <div>
+          <div className="stats">
+      {Object.entries(leaderboardData)
+        .sort(([a], [b]) => a.localeCompare(b)) 
+        .map(([tag, stats]) => (
+
+          <p key={tag}>
+            {`${tag}: ${((stats.correct / stats.total) * 100).toFixed(2)}% (Username: ${stats.username}  User ID: ${stats.userId})`}
+          </p>
+        ))}
+    </div>
+    </div>
+  </div>
+)}
+
       </header>
     </div>
   );
