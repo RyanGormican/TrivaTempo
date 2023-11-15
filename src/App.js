@@ -161,13 +161,13 @@ useEffect(() => {
         } else {
           const newTagStats = {};
           question.tags.forEach(tag => {
-            newTagStats[tag] = { total: 1, correct: userAnswer === question.correctAnswer ? 1 : 0 };
+            newTagStats[tag] = { total: 1, correct: Answer === question.correctAnswer ? 1 : 0 };
           });
 
           await setDoc(userDocRef, {
             totalAnswered: 1,
-            correctAnswers: userAnswer === question.correctAnswer ? 1 : 0,
-            incorrectAnswers: userAnswer !== question.correctAnswer ? 1 : 0,
+            correctAnswers: Answer === question.correctAnswer ? 1 : 0,
+            incorrectAnswers: Answer !== question.correctAnswer ? 1 : 0,
             bestAnswerStreak: answerStreak,
             tagStats: newTagStats,
           });
