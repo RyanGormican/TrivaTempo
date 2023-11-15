@@ -388,7 +388,7 @@ const handleAnswer = (Answer) => {
             <div className="center">
             {!user && (
             <div>
-            Sign in to save your stats!
+            Sign in to save your stats and contribute to the leaderboard!
             <GoogleButton onClick={signUp} />
             </div>
             )}
